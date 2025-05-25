@@ -1,0 +1,200 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local StarterGui = game:GetService("StarterGui")
+local CoreGui = game:GetService("CoreGui")
+
+if _G.AutoQuidzCollectorRunning then
+    StarterGui:SetCore("SendNotification", {
+        Title = "Script Already Running",
+        Text = "The Auto Quidz Collector is already running!",
+        Duration = 5
+    })
+    return
+end
+_G.AutoQuidzCollectorRunning = true
+
+-- Hàm thêm bo góc
+local function addCorner(instance, radius)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, radius or 10)
+    corner.Parent = instance
+end
+
+-- GUI Setup
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Name = "AutoQuidzGui"
+ScreenGui.Parent = CoreGui
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 220, 0, 180)
+MainFrame.Position = UDim2.new(0.5, -110, 0.1, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.Parent = ScreenGui
+addCorner(MainFrame)
+
+local TitleBar = Instance.new("TextLabel")
+TitleBar.Size = UDim2.new(1, 0, 0, 30)
+TitleBar.Text = "🪙 Auto Quidz Collector"
+TitleBar.TextColor3 = Color3.new(1, 1, 1)
+TitleBar.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+TitleBar.Font = Enum.Font.SourceSansSemibold
+TitleBar.TextSize = 16
+TitleBar.Parent = MainFrame
+addCorner(TitleBar)
+
+local MinimizeButton = Instance.new("TextButton")
+MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
+MinimizeButton.Position = UDim2.new(1, -60, 0, 0)
+MinimizeButton.Text = "_"
+MinimizeButton.TextColor3 = Color3.new(1, 1, 1)
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(200, 150, 0)
+MinimizeButton.Font = Enum.Font.SourceSansBold
+MinimizeButton.TextSize = 18
+MinimizeButton.Parent = MainFrame
+addCorner(MinimizeButton)
+
+local CloseButton = Instance.new("TextButton")
+CloseButton.Size = UDim2.new(0, 30, 0, 30)
+CloseButton.Position = UDim2.new(1, -30, 0, 0)
+CloseButton.Text = "X"
+CloseButton.TextColor3 = Color3.new(1, 1, 1)
+CloseButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+CloseButton.Font = Enum.Font.SourceSansBold
+CloseButton.TextSize = 18
+CloseButton.Parent = MainFrame
+addCorner(CloseButton)
+
+local QuidzCounter = Instance.new("TextLabel")
+QuidzCounter.Size = UDim2.new(1, -20, 0, 25)
+QuidzCounter.Position = UDim2.new(0, 10, 0, 40)
+QuidzCounter.Text = "Quidz Collected: 0"
+QuidzCounter.TextColor3 = Color3.new(1, 1, 1)
+QuidzCounter.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+QuidzCounter.Font = Enum.Font.SourceSans
+QuidzCounter.TextSize = 14
+QuidzCounter.Parent = MainFrame
+addCorner(QuidzCounter)
+
+local LevelCounter = Instance.new("TextLabel")
+LevelCounter.Size = UDim2.new(1, -20, 0, 25)
+LevelCounter.Position = UDim2.new(0, 10, 0, 70)
+LevelCounter.Text = "Level: 1"
+LevelCounter.TextColor3 = Color3.new(1, 1, 1)
+LevelCounter.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+LevelCounter.Font = Enum.Font.SourceSans
+LevelCounter.TextSize = 14
+LevelCounter.Parent = MainFrame
+addCorner(LevelCounter)
+
+local StartButton = Instance.new("TextButton")
+StartButton.Size = UDim2.new(1, -20, 0, 30)
+StartButton.Position = UDim2.new(0, 10, 0, 100)
+StartButton.Text = "▶ Start"
+StartButton.TextColor3 = Color3.new(1, 1, 1)
+StartButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+StartButton.Font = Enum.Font.SourceSansBold
+StartButton.TextSize = 16
+StartButton.Parent = MainFrame
+addCorner(StartButton)
+
+local StopButton = Instance.new("TextButton")
+StopButton.Size = UDim2.new(1, -20, 0, 30)
+StopButton.Position = UDim2.new(0, 10, 0, 135)
+StopButton.Text = "■ Stop"
+StopButton.TextColor3 = Color3.new(1, 1, 1)
+StopButton.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
+StopButton.Font = Enum.Font.SourceSansBold
+StopButton.TextSize = 16
+StopButton.Parent = MainFrame
+addCorner(StopButton)
+
+local ShowBtn = Instance.new("TextButton")
+ShowBtn.Size = UDim2.new(0, 100, 0, 35)
+ShowBtn.Position = UDim2.new(0.5, -50, 0, 0)
+ShowBtn.Text = "📂 Show Panel"
+ShowBtn.TextColor3 = Color3.new(1, 1, 1)
+ShowBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+ShowBtn.Font = Enum.Font.SourceSansBold
+ShowBtn.TextSize = 16
+ShowBtn.Visible = false
+ShowBtn.Parent = ScreenGui
+addCorner(ShowBtn)
+
+-- Variables
+local collecting = false
+local quidzPosition = Vector3.new(408.13, 31.94, -26.91)
+local cooldown = 0.7
+local quidzCollected = 0
+local level = 1
+local quidzPerLevel = 10
+local quidzIncreaseAmount = 5
+local interval = 9
+local doubleQuidz = false
+
+local function checkDoubleQuidz()
+    local gamepassId = 12345678
+    if LocalPlayer:HasPass(gamepassId) then
+        doubleQuidz = true
+    end
+end
+
+local function teleportToQuidz()
+    local character = LocalPlayer.Character
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        character.HumanoidRootPart.CFrame = CFrame.new(quidzPosition)
+    end
+end
+
+local function startCollecting()
+    if collecting then return end
+    collecting = true
+    while collecting do
+        teleportToQuidz()
+        local quidzToAdd = doubleQuidz and quidzIncreaseAmount * 2 or quidzIncreaseAmount
+        quidzCollected += quidzToAdd
+        QuidzCounter.Text = "Quidz Collected: " .. quidzCollected
+        if quidzCollected >= level * quidzPerLevel then
+            level += 1
+            LevelCounter.Text = "Level: " .. level
+        end
+        task.wait(interval)
+    end
+end
+
+local function stopCollecting()
+    collecting = false
+end
+
+-- Button Events
+StartButton.MouseButton1Click:Connect(startCollecting)
+StopButton.MouseButton1Click:Connect(stopCollecting)
+
+MinimizeButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    ShowBtn.Visible = true
+end)
+
+ShowBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = true
+    ShowBtn.Visible = false
+end)
+
+CloseButton.MouseButton1Click:Connect(function()
+    _G.AutoQuidzCollectorRunning = false
+    ScreenGui:Destroy()
+end)
+
+LocalPlayer.CharacterAdded:Connect(function()
+    task.wait(1)
+    MainFrame.Parent = ScreenGui
+end)
+
+StarterGui:SetCore("SendNotification", {
+    Title = "AFK Mode Warning",
+    Text = "Turn on AFK mode! If not, you'll get banned. If on, you're safe!",
+    Duration = 9
+})
